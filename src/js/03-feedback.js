@@ -1,49 +1,40 @@
 import throttle from 'lodash.throttle';
+const throttle = require(`lodash.throttle`);
 
-let formData = {};
-const FEEDBACK = "feedback-form-state";
+const STORAGE_KEY = 'feedback-form-state';
+
 const form = document.querySelector('.feedback-form');
-const textarea = document.querySelector('.feedback-form textarea');
-const input = document.querySelector('.feedback-form input');
+const email = document.querySelector('[name = "email"]');
+const message = document.querySelector('[name = "message"]');
 
-form.addEventListener('submit', onFormSubmit);
-form.addEventListener('input', throttle(onFormInput, 500));
-onSaveMessage();
+form.addEventListener(`input`, throttle(handleInput, 500));
+form.addEventListener('submit', handleSubmit);
 
-function onFormInput(event) {
-  formData[event.target.name] = event.target.value;
-  const storage = JSON.stringify(formData);
-  localStorage.setItem(FEEDBACK, storage);
+function handleInput() {
+  const userPostObj = {
+    email: email.value,
+    message: message.value,
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(userPostObj));
 }
 
-function onFormSubmit(event) {
-  event.preventDefault();
-  event.currentTarget.reset();
-  localStorage.removeItem(FEEDBACK);
+onPageLoad();
 
-  console.log(formData);
-
-  for (const key in formData) {
-    delete formData[key];
-  }
-}
-
-function onSaveMessage() {
-  const saveMessage = localStorage.getItem(FEEDBACK);
-  const save = JSON.parse(saveMessage);
-
-  if (save === null) {
-  input.value = '';
-  textarea.value = '';
-  } else if (save.email === undefined && save.message !== undefined) {
-    input.value = '';
-    textarea.value = save.message;
-  } else if (save.email !== undefined && save.message === undefined) {
-    input.value = save.email;
-    textarea.value = '';
+function onPageLoad() {
+  const parseValue = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if (parseValue) {
+    email.value = parseValue.email;
+    message.value = parseValue.message;
   } else {
-    input.value = save.email;
-    textarea.value = save.message;
+    email.value = '';
+    message.value = '';
   }
 }
 
+function handleSubmit() {
+  event.preventDefault();
+
+  console.log(`Mail: ${email.value}, Message: ${message.value}`);
+  event.currentTarget.reset();
+  localStorage.removeItem(STORAGE_KEY);
+}
