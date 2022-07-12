@@ -1,40 +1,58 @@
 import throttle from 'lodash.throttle';
-const throttle = require(`lodash.throttle`);
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+
+const refs = {
+  form: document.querySelector('.feedback-form'),
+};
 
 const STORAGE_KEY = 'feedback-form-state';
 
-const form = document.querySelector('.feedback-form');
-const email = document.querySelector('[name = "email"]');
-const message = document.querySelector('[name = "message"]');
+const formData = {};
 
-form.addEventListener(`input`, throttle(handleInput, 500));
-form.addEventListener('submit', handleSubmit);
+refs.form.addEventListener('submit', onFormSubmit);
+refs.form.addEventListener('input', throttle(onTextareaInput, 500));
 
-function handleInput() {
-  const userPostObj = {
-    email: email.value,
-    message: message.value,
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(userPostObj));
-}
+refs.form.addEventListener('input', e => {
+  formData[e.target.name] = e.target.value;
+});
 
-onPageLoad();
+setTextareaInput();
 
-function onPageLoad() {
-  const parseValue = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (parseValue) {
-    email.value = parseValue.email;
-    message.value = parseValue.message;
-  } else {
-    email.value = '';
-    message.value = '';
+function onFormSubmit(e) {
+  e.preventDefault();
+
+  if (!e.target.message.value || !e.target.email.value) {
+    Notify.failure('Error. All fields must be filled');
+    return;
   }
+
+  const dataSubmit = {
+    email: e.currentTarget.email.value,
+    message: e.currentTarget.message.value,
+  };
+
+  console.log('Send form');
+  console.log(dataSubmit);
+
+  e.currentTarget.reset();
+  localStorage.removeItem(STORAGE_KEY);
 }
 
-function handleSubmit() {
-  event.preventDefault();
+function onTextareaInput(e) {
+  formData[e.target.name] = e.target.value;
+  const inputText = JSON.stringify(formData);
+  localStorage.setItem(STORAGE_KEY, inputText);
+}
 
-  console.log(`Mail: ${email.value}, Message: ${message.value}`);
-  event.currentTarget.reset();
-  localStorage.removeItem(STORAGE_KEY);
+function setTextareaInput() {
+  const savedMessage = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if (!savedMessage) {
+    return;
+  }
+  if (savedMessage.message) {
+    refs.form.message.value = savedMessage.message;
+  }
+  if (savedMessage.email) {
+    refs.form.email.value = savedMessage.email;
+  }
 }
